@@ -1,7 +1,7 @@
 ---
 title: "mb-memory-system-diagnostic"
 doc-id: "mb-177c131d"
-updated: "2026-10-04"
+updated: "2026-10-05"
 ---
 
 # Memory Diagnostic
@@ -57,16 +57,17 @@ live-testing the binary it is policed by. Cupcake is tested only for its
    what blocked it, then apply the trouble gate.
 6. **Never read, print, or copy credential values.** Reference by variable
    name only, always.
-7. **Known documentation drift, checked live rather than assumed:**
-   `postgresql-reference.md` (verified 2026-09-13) states WSL here has no
-   systemd. The Memory Governor's systemd migration was executed and
-   verified two days later (2026-09-15), and is documented as affecting the
-   entire WSL environment, not just the Governor's own processes. This
-   skill does not silently pick a side — §2 runs a live init-model check
-   first, before any other PostgreSQL Instance B command, and logs the real
-   result. §3's Governor restart-posture check uses `systemctl --user
-   status` per the newer record; if that fails outright, treat it as a
-   finding, not a contradiction to paper over.
+7. **Environment drift is checked live rather than assumed.** The recorded
+   records once disagreed about WSL's init model (`postgresql-reference.md`
+   said no systemd; the Memory Governor's 2026-09-15 systemd migration
+   flipped `systemd=true` for the entire WSL environment; the reference was
+   reconciled 2026-09-28 — systemd is PID 1, both `systemctl` and `service`
+   management paths are currently valid). §2 still runs a live init-model
+   check first, before any other PostgreSQL Instance B command, and logs
+   the real result — a live mismatch against any recorded state is a
+   finding, never papered over. §3's Governor restart-posture check uses
+   `systemctl --user status` per the reconciled record; if that fails
+   outright, treat it as a finding, not a contradiction to paper over.
 8. **Environment currency (live-verified 2026-09-28):** WSL here is
    systemd-managed — journald holds the Governor's logs (the retired
    /tmp/memory-governor*.log paths must not be used), and agent reads of
@@ -80,11 +81,13 @@ live-testing the binary it is policed by. Cupcake is tested only for its
 
 ## Report file
 
-Write to `C:\mybizz\memory-diagnostic-reports\memory-diagnostic-(date).md`
-(date = run date, `YYYY-MM-DD`). **Append a result block for each section as
-it closes** — do not hold results in memory and write once at the end. If
-the run stops or is aborted partway, everything that completed is already on
-disk.
+Write to (replace)
+`C:\mybizz\mybizz-config-docs\mb-memory-system-diagnostic\mb-memory-system-diagnostic-run-report.md`
+— every run replaces this one file. At run start, replace the file's
+contents. **Append a result block for each section as it closes** — do not
+hold results in memory and write once at the end. If the run stops or is
+aborted partway, everything that completed is already on disk; the next run
+replaces the file in full.
 
 Report style: **structured, technical, fact-finding. No prose narrative.**
 Every entry is metrics + verdict, not paragraphs. Template per section:
@@ -155,13 +158,10 @@ missing-remote findings logged and dispositioned).
 not checked anywhere in this section or this skill.**
 
 **Live init-model check — run first, before anything else in this section.**
-`postgresql-reference.md` (verified 2026-09-13) documents WSL here as having
-no systemd (`pg_ctlcluster`/`service` only). The Memory Governor's auto-start
-migration flipped `systemd=true` in `/etc/wsl.conf` two days later
-(2026-09-15) — a change stated in the Governor's own docs to affect "the
-entire WSL environment," not just its two processes. Which management path
-is actually correct for Instance B *today* is therefore unverified, not
-assumed either way:
+The reconciled record (2026-09-28): WSL here is systemd-managed — PID 1 is
+`systemd`, and both `systemctl` and `service` management paths are currently
+valid. The check below runs anyway, every run, so the live state is
+measured rather than assumed:
 
 ```bash
 ps -p 1 -o comm=
@@ -170,13 +170,11 @@ systemctl status postgresql 2>&1 | head -5
 service postgresql status
 ```
 
-Log which command(s) actually work. If `systemctl` now works where the
-reference doc says it can't, or `service`/`pg_ctlcluster` has stopped
-working, that is a **finding** — trouble gate, remediation is a documentation
-correction to `postgresql-reference.md` (developer-approved before editing;
-this skill does not silently rewrite other suites' docs), not a live-system
-fix. If both paths work, log both as currently valid and note the doc as
-due for a reconciling update regardless.
+Log which command(s) actually work. A live result that contradicts the
+reconciled record — or a management path that has stopped working — is a
+**finding** — trouble gate, remediation is a documentation correction to
+`postgresql-reference.md` (developer-approved before editing; this skill
+does not silently rewrite other suites' docs), not a live-system fix.
 
 **Diagnostic:**
 

@@ -1,7 +1,7 @@
 ---
 title: "mb-memory-system-diagnostic"
 doc-id: "mb-177c131d"
-updated: "2026-10-05"
+updated: "2026-10-20"
 ---
 
 # Memory Diagnostic
@@ -203,7 +203,7 @@ path(s) work (`systemctl` / `service` / `pg_ctlcluster` — pass/fail each),
 cluster status, table count + RLS-enabled count for `gbrain`, role isolation
 result (pass/fail per role pair checked).
 
-**Pass:** cluster `online`, RLS coverage matches the recorded 62/62, role
+**Pass:** cluster `online`, every table has row-level security switched on (`tables` equals `rls_tables`), role
 isolation confirms scoped access both directions, init-model check completed
 and logged (mismatch against the reference doc is a finding, not a run
 failure).
